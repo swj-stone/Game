@@ -1,0 +1,1 @@
+START /B DeviceEmulator.exe .\2052\OS.BIN /sharedfolder .\Card /skin .\2052\li_VGA.xml /tooltips ON /memsize 192 /VMID {B739201B-7ACE-5678-1234-2E7AC8065544} /defaultsave /nosecurityprompt
