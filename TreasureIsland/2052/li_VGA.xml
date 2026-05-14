@@ -12,8 +12,5 @@
 
 
 		displayDepth="16"
-		mappingImage="da.png"
-		normalImage="da.png"
-		downImage= "da.png">
     </view>
 </skin>
