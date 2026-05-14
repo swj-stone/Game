@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<skin>
+    <view
+		titleBar ="WM 6.1.4 Professional - VGA"
+		
+		
+		displayPosX="0"
+		displayPosY="0"
+		
+		displayWidth="240"
+		displayHeight="320"
+
+
+		displayDepth="16"
+		mappingImage="qda.png"
+		normalImage="qda.png"
+		downImage= "qda.png">
+    </view>
+</skin>

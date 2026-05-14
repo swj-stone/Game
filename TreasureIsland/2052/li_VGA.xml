@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<skin>
+    <view
+		titleBar ="WM 6.5.21210 Professional - VGA"
+		
+		
+		displayPosX="0"
+		displayPosY="0"
+		
+		displayWidth="480"
+		displayHeight="640"
+
+
+		displayDepth="16"
+		mappingImage="da.png"
+		normalImage="da.png"
+		downImage= "da.png">
+    </view>
+</skin>
