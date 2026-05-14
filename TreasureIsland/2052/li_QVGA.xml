@@ -11,9 +11,5 @@
 		displayHeight="320"
 
 
-		displayDepth="16"
-		mappingImage="qda.png"
-		normalImage="qda.png"
-		downImage= "qda.png">
     </view>
 </skin>
