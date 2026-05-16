@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>筹码与诡计 - Chips & Bluff</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#e0d8c0;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;user-select:none}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at center,#1a1a2e 0%,#0a0a14 100%);z-index:-1}
+.header{text-align:center;padding:10px 20px;background:linear-gradient(180deg,rgba(180,140,60,0.2),transparent)}
+.header h1{font-size:1.8em;background:linear-gradient(180deg,#d4a843,#8b6914);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-weight:900;letter-spacing:4px}
+.header .sub{font-size:0.75em;color:#8b7355;letter-spacing:2px}
+.main{display:flex;flex-direction:column;align-items:center;padding:8px 20px;gap:6px;max-width:1100px;margin:0 auto}
+.info-bar{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;font-size:0.85em}
+.info-bar .chip{background:#2a1f0a;border:2px solid #8b6914;padding:5px 12px;border-radius:16px;font-weight:bold;color:#d4a843}
+.info-bar .points{color:#ffd700}
+.effects-bar{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.effect-tag{background:rgba(212,168,67,0.12);border:1px solid #5a4a1a;padding:2px 10px;border-radius:10px;font-size:0.72em;color:#d4a843}
+.table{position:relative;width:100%;min-height:300px;background:radial-gradient(ellipse,#1a4a1a 0%,#0d2a0d 60%,#0a1a0a 100%);border-radius:180px;border:3px solid #3a2a0a;margin:4px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;box-shadow:0 0 50px rgba(0,0,0,0.5),inset 0 0 60px rgba(0,0,0,0.3);padding:20px}
+.deck-area{display:flex;gap:30px;align-items:center}
+.deck,.discard-pile{position:relative;width:66px;height:94px;border-radius:8px;cursor:pointer;transition:transform 0.2s;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.deck{background:linear-gradient(135deg,#1a3050,#0e2040);border:2px solid #3a6a9a}
+.discard-pile{background:linear-gradient(135deg,#301a1a,#200e0e);border:2px solid #5a3a3a}
+.deck:hover,.discard-pile:hover{transform:translateY(-3px)}
+.deck .count{font-size:1.4em;font-weight:bold;color:#7ab}
+.discard-pile .count{font-size:1.1em;color:#a88}
+.play-zone{display:flex;gap:30px;align-items:center;justify-content:center}
+.play-slot{width:84px;height:120px;border-radius:10px;border:2px dashed rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;transition:all 0.3s;position:relative}
+.play-slot.filled{border-color:#d4a843;box-shadow:0 0 16px rgba(212,168,67,0.25)}
+.play-slot .card{cursor:pointer}
+.play-slot .card:hover{transform:translateY(-6px);box-shadow:0 8px 16px rgba(0,0,0,0.4)}
+.card{width:74px;height:106px;border-radius:7px;position:relative;transition:transform 0.25s,box-shadow 0.25s;transform-style:preserve-3d;cursor:pointer}
+.card-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.25s}
+.card.flipped .card-inner{transform:rotateY(180deg)}
+.card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.card-back{background:linear-gradient(135deg,#162840,#243650);border:2px solid #3a5a7a}
+.card-back::after{content:'◆';font-size:1.6em;color:#3a5a7a}
+.card-front{background:linear-gradient(135deg,#faf8f0,#e8e0d0);border:2px solid #c8b898;transform:rotateY(180deg);color:#1a0a00;padding:4px}
+.card-front .cv{font-size:1.8em;font-weight:900;color:#1a0a00}
+.card-front .cn{font-size:0.65em;font-weight:bold;color:#5a3a1a;margin-top:1px}
+.card-front .ce{font-size:0.5em;color:#7a5a3a;text-align:center;margin-top:1px;line-height:1.15}
+.card.assassin .card-front{border-color:#c04040}
+.card.joker-card .card-front{border-color:#9b30ff}
+.card.guard .card-front{border-color:#4080c0}
+.card.wizard .card-front{border-color:#40a060}
+.card.king .card-front{border-color:#d4a843}
+.card.cheat .card-front{border-color:#c060a0}
+.card.mirror .card-front{border-color:#60c0c0}
+.card.gambler .card-front{border-color:#c08040}
+.card.apothecary .card-front{border-color:#80c060}
+.card.ghost .card-front{border-color:#a0a0c0}
+.card.normal .card-front{border-color:#b0a080}
+.card.zero-card .card-front{border-color:#888}
+.card.role-card-style .card-front{background:linear-gradient(135deg,#fff8e0,#ffe0a0);border-color:#d4a843}
+.hand-area{display:flex;flex-direction:column;align-items:center;gap:3px}
+.hand-label{font-size:0.75em;color:#8b7355}
+.hand{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+.hand .card:hover:not(.played){transform:translateY(-8px);box-shadow:0 8px 16px rgba(0,0,0,0.4);z-index:10}
+.hand .card.selected{transform:translateY(-14px);box-shadow:0 0 16px rgba(212,168,67,0.5);border:2px solid #d4a843;border-radius:7px}
+.role-card-area{display:flex;gap:6px;align-items:center;justify-content:center;margin:2px 0}
+.role-card-tag{background:rgba(212,168,67,0.1);border:1px solid #d4a843;border-radius:8px;padding:4px 10px;font-size:0.7em;color:#d4a843}
+.panel{background:rgba(0,0,0,0.35);border:1px solid #3a2a0a;border-radius:12px;padding:14px;width:100%;max-width:680px}
+.panel h3{color:#d4a843;margin-bottom:8px;font-size:0.95em}
+.role-grid{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.role-card{background:rgba(0,0,0,0.3);border:2px solid #3a2a0a;border-radius:12px;padding:12px;width:142px;cursor:pointer;transition:all 0.2s;text-align:center}
+.role-card:hover{border-color:#d4a843;transform:translateY(-2px)}
+.role-card.sel{border-color:#d4a843;box-shadow:0 0 16px rgba(212,168,67,0.25);background:rgba(212,168,67,0.08)}
+.role-card .rn{font-size:1em;font-weight:bold;color:#d4a843}
+.role-card .rc{color:#ffd700;font-size:0.85em;margin:3px 0}
+.role-card .rd{font-size:0.65em;color:#8b7355;line-height:1.3}
+.btn{background:linear-gradient(180deg,#3a2a0a,#2a1a00);border:2px solid #8b6914;color:#d4a843;padding:8px 20px;border-radius:7px;cursor:pointer;font-size:0.9em;font-weight:bold;transition:all 0.2s}
+.btn:hover{background:linear-gradient(180deg,#4a3a1a,#3a2a0a);border-color:#d4a843}
+.btn:disabled{opacity:0.35;cursor:not-allowed}
+.btn.confirm{border-color:#40a040;color:#80d080}
+.btn.sm{padding:5px 12px;font-size:0.75em}
+.bet-area{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+.bet-slider{width:180px;accent-color:#d4a843}
+.bet-value{font-size:1.1em;font-weight:bold;color:#ffd700;min-width:35px;text-align:center}
+.bet-presets{display:flex;gap:5px}
+.bet-preset{background:rgba(0,0,0,0.3);border:1px solid #5a4a2a;color:#c8b898;padding:3px 8px;border-radius:4px;cursor:pointer;font-size:0.75em}
+.bet-preset:hover{border-color:#d4a843}
+.msg-log{max-height:100px;overflow-y:auto;font-size:0.75em;color:#8b7355;padding:6px;background:rgba(0,0,0,0.2);border-radius:8px;width:100%;max-width:680px}
+.msg-log .msg{padding:1px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.msg-log .msg.imp{color:#d4a843}
+.msg-log .msg.win{color:#80d080}
+.msg-log .msg.lose{color:#d08080}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:100}
+.overlay-content{background:#1a1a2e;border:3px solid #d4a843;border-radius:16px;padding:28px;text-align:center}
+.overlay-content h2{font-size:1.6em;color:#d4a843;margin-bottom:14px}
+.overlay-content .fs{font-size:1.1em;color:#e0d8c0;margin-bottom:18px}
+.phase-ind{text-align:center;font-size:0.85em;color:#d4a843;padding:2px}
+.discard-tooltip{position:absolute;top:100px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.92);border:1px solid #5a3a3a;border-radius:8px;padding:8px;z-index:50;display:flex;gap:4px;flex-wrap:wrap;max-width:380px}
+.discard-tooltip .mc{width:32px;height:46px;border-radius:3px;background:#e8e0d0;border:1px solid #c8b898;display:flex;align-items:center;justify-content:center;font-size:0.65em;font-weight:bold;color:#1a0a00;flex-direction:column}
+.discard-tooltip .mc .mcv{font-size:0.8em}
+.discard-tooltip .mc .mcn{font-size:0.55em}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.55}}
+.pulse{animation:pulse 1s infinite}
+@keyframes slideIn{from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.slide-in{animation:slideIn 0.3s ease-out}
+@media(max-width:768px){.card{width:58px;height:84px}.play-slot{width:68px;height:98px}.role-card{width:120px;padding:8px}.header h1{font-size:1.3em}}
+</style>
+</head>
+<body>
+<div class="header"><h1>筹码与诡计</h1><div class="sub">CHIPS & BLUFF</div></div>
+<div class="main" id="root"></div>
+
+<script>
+// ── Card definitions (10 special ×2, 5 zero, 5 normal 1-5 = 30 total) ──
+const CD = {
+  assassin:{n:'刺客 1',v:1,c:'assassin',e:'对手点数减半(向下取整)'},
+  joker:{n:'小丑 0',v:0,c:'joker-card',e:'赢加倍对方下注,输加倍己方;排名:>国王,<2/3/5'},
+  guard:{n:'盾卫 3',v:3,c:'guard',e:'胜时下回合下注后+2分'},
+  wizard:{n:'巫师 2',v:2,c:'wizard',e:'输时下回合开始摸1张牌'},
+  king:{n:'国王 4',v:4,c:'king',e:'胜时额外+2分(系统)'},
+  cheat:{n:'骗子 2',v:2,c:'cheat',e:'反向比大小(点数小者胜)'},
+  mirror:{n:'镜像 3',v:3,c:'mirror',e:'胜时下回合第一轮强制平局'},
+  gambler:{n:'赌徒 1',v:1,c:'gambler',e:'点数随机变为-1/2/5'},
+  apothecary:{n:'药剂师 2',v:2,c:'apothecary',e:'输时保留一半积分'},
+  ghost:{n:'幽灵 0',v:0,c:'ghost',e:'平时下注×1.5(不扣己方积分)'},
+  n1:{n:'点数1',v:1,c:'normal',e:''},
+  n2:{n:'点数2',v:2,c:'normal',e:''},
+  n3:{n:'点数3',v:3,c:'normal',e:''},
+  n4:{n:'点数4',v:4,c:'normal',e:''},
+  n5:{n:'点数5',v:5,c:'normal',e:''},
+  zero:{n:'空牌0',v:0,c:'zero-card',e:''}
+};
+const ROLES = {
+  jester:{n:'小丑',icon:'J',chips:20,d:'必定获得小丑牌(不占手牌)。0点牌视为1,小丑特殊排名。'},
+  knight:{n:'骑士',icon:'K',chips:30,d:'手牌上限初始4。赢→+1(最多6),输→-1(最少2)。回合结束补牌到上限。'},
+  noble:{n:'权贵',icon:'N',chips:40,d:'回合开始摸1弃1(公开)。连赢2+跳过,连输2+摸2弃2。'},
+  rich:{n:'富豪',icon:'R',chips:70,d:'必定获得0牌(不占手牌)。下注≥10。每失10分摸1牌。<10分全押。'}
+};
+
+// ── State ──
+let G={}, showDisc=false;
+function initG(){
+  G={
+    phase:'role_sel',round:0,maxRounds:4,
+    deck:[],disc:[],
+    pH:[],nH:[], // hand (no role cards)
+    pRoleCard:null, nRoleCard:null, // role-granted cards, separate from hand
+    pChips:0,nChips:0,
+    pRole:null,nRole:null,
+    pPlayed:null,nPlayed:null,
+    pBet:0,nBet:0,
+    pExtraDraw:0,nExtraDraw:0,
+    pGuard:false,nGuard:false,
+    pMirror:false,nMirror:false,
+    pStreak:0,nStreak:0,
+    pHandLimit:5,nHandLimit:5,
+    msg:[],tieCnt:0,tieCards:[],
+    pGamble:null,nGamble:null,
+    pLossTotal:0,nLossTotal:0,
+    nobleDiscardLeft:0,
+    roundResolved:false,
+    roundResult:'', // 'win'|'lose'|'tie'
+  };
+}
+
+function msg(t,c){G.msg.push({t,c});if(G.msg.length>60)G.msg.shift()}
+
+function mkDeck(){
+  let cards=[],id=0;
+  const sp=['assassin','joker','guard','wizard','king','cheat','mirror','gambler','apothecary','ghost'];
+  sp.forEach(t=>{for(let i=0;i<2;i++) cards.push({id:id++,type:t,...CD[t],sp:true})});
+  for(let v=1;v<=5;v++) cards.push({id:id++,type:'n'+v,...CD['n'+v],sp:false});
+  for(let i=0;i<5;i++) cards.push({id:id++,type:'zero',...CD['zero'],sp:false});
+  return cards;
+}
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b}
+
+// Role cards: created outside the deck
+function mkJokerCard(id){return{id,type:'joker',...CD['joker'],sp:true,roleCard:true}}
+function mkZeroCard(id){return{id,type:'zero',...CD['zero'],sp:false,roleCard:true}}
+
+function isJokerLike(card,role){return card.type==='joker'||(card.type==='zero'&&role==='jester')}
+
+function getVal(card,role){
+  if(card.type==='gambler') return '?';
+  if(isJokerLike(card,role)) return '1*';
+  if(card.type==='joker') return '0*';
+  return String(card.v);
+}
+
+function getNumVal(card,role){
+  if(card.type==='gambler') return null;
+  if(card.type==='joker'&&role==='jester') return 1;
+  if(card.type==='zero'&&role==='jester') return 1;
+  if(card.type==='joker') return 0;
+  return card.v;
+}
+
+function rollGambler(){
+  const r=Math.random();
+  if(r<1/3) return -1;
+  if(r<2/3) return 2;
+  return 5;
+}
+
+// ── Comparison ──
+function compare(pCard,nCard,pRole,nRole){
+  let pV = pCard.type==='gambler' ? (G.pGamble??pCard.v) : getNumVal(pCard,pRole);
+  let nV = nCard.type==='gambler' ? (G.nGamble??nCard.v) : getNumVal(nCard,nRole);
+
+  if(pCard.type==='assassin'&&nCard.type!=='assassin') nV=Math.floor(nV/2);
+  if(nCard.type==='assassin'&&pCard.type!=='assassin') pV=Math.floor(pV/2);
+  if(pCard.type==='assassin'&&nCard.type==='assassin'){pV=Math.floor(pV/2);nV=Math.floor(nV/2)}
+
+  function jCmp(jV, oV, oCard){
+    if(oCard&&oCard.type==='king') return 'win';
+    if(oV===-1) return 'win';
+    if(oV===2||oV===3||oV===5) return 'lose';
+    return jV>oV?'win':jV<oV?'lose':'tie';
+  }
+
+  let pJ=isJokerLike(pCard,pRole), nJ=isJokerLike(nCard,nRole);
+  let pCh=pCard.type=='cheat', nCh=nCard.type=='cheat';
+  let pJV = getNumVal(pCard,pRole);
+  let nJV = getNumVal(nCard,nRole);
+
+  if(pJ&&!nJ){
+    const r=jCmp(pJV,nV,nCard);
+    if(r==='win') return pCh?'n':'p';
+    if(r==='lose') return pCh?'p':'n';
+    if(pCh&&!nCh) return pJV<nV?'p':pJV>nV?'n':'tie';
+    if(nCh&&!pCh) return nV<pJV?'n':nV>pJV?'p':'tie';
+    return pJV>nV?'p':pJV<nV?'n':'tie';
+  }
+  if(nJ&&!pJ){
+    const r=jCmp(nJV,pV,pCard);
+    if(r==='win') return nCh?'p':'n';
+    if(r==='lose') return nCh?'n':'p';
+    if(pCh&&!nCh) return pV<nJV?'p':pV>nJV?'n':'tie';
+    if(nCh&&!pCh) return nJV<pV?'n':nJV>pV?'p':'tie';
+    return pV>nJV?'p':pV<nJV?'n':'tie';
+  }
+  if(pJ&&nJ){
+    if(pCh&&!nCh) return pJV<nJV?'p':pJV>nJV?'n':'tie';
+    if(nCh&&!pCh) return nJV<pJV?'n':nJV>pJV?'p':'tie';
+    return pJV>nJV?'p':pJV<nJV?'n':'tie';
+  }
+  if(pCh&&!nCh) return pV<nV?'p':pV>nV?'n':'tie';
+  if(nCh&&!pCh) return nV<pV?'n':nV>pV?'p':'tie';
+  return pV>nV?'p':pV<nV?'n':'tie';
+}
+
+// ── AI ──
+function aiPickCard(hand,role){
+  let sc=hand.map((c,i)=>{
+    let s=c.type==='gambler'?1.5:c.v;
+    if(c.type=='joker') s=role==='jester'?2.5:2;
+    else if(c.type=='king') s=4.5;
+    else if(c.type=='assassin') s=3.8;
+    else if(c.type=='guard') s=3.3;
+    else if(c.type=='cheat') s=2.8;
+    else if(c.type=='mirror') s=3.1;
+    else if(c.type=='wizard') s=2.2;
+    else if(c.type=='ghost') s=1.3;
+    else if(c.type=='apothecary') s=1.7;
+    else if(c.type=='gambler') s=1.5+Math.random();
+    return{i,s,card:c};
+  });
+  sc.sort((a,b)=>b.s-a.s);
+  const top=Math.min(3,sc.length);
+  const pick=sc[Math.floor(Math.random()*top)];
+  return pick;
+}
+
+function aiBet(chips,pChips,card,round,role){
+  let s;
+  if(card.type=='gambler') s=0.5;
+  else if(card.type=='joker') s=role=='jester'?0.6:0.5;
+  else if(card.type=='king') s=0.8;
+  else if(card.type=='assassin') s=0.7;
+  else if(card.type=='guard') s=0.6;
+  else if(card.type=='cheat') s=0.55;
+  else s=card.v/6;
+  let frac=role=='rich'?Math.max(0.3,s*0.4):0.12+s*0.25;
+  if(round>=3&&chips<pChips) frac+=0.15;
+  if(chips>pChips*2) frac*=0.6;
+  let bet=Math.floor(chips*frac);
+  if(role=='rich'){bet=Math.max(10,bet);if(chips<10)bet=chips}
+  bet=Math.max(1,Math.min(bet,chips));
+  if(Math.random()<0.2) bet=Math.max(1,bet+Math.floor((Math.random()-0.5)*5));
+  return Math.min(bet,chips);
+}
+
+// ── Game Flow ──
+function selPRole(k){G.pRole=k;msg(`你: ${ROLES[k].n}`,'imp');render()}
+function selNRole(k){G.nRole=k;msg(`NPC: ${ROLES[k].n}`,'imp');render()}
+
+function startGame(){
+  G.pChips=ROLES[G.pRole].chips;G.nChips=ROLES[G.nRole].chips;
+  if(G.pRole=='knight')G.pHandLimit=4;
+  if(G.nRole=='knight')G.nHandLimit=4;
+  G.phase='deal';doDeal();G.round=1;doRoundStart();
+}
+
+function doDeal(){
+  G.deck=shuffle(mkDeck());G.disc=[];
+  let nid=1000;
+  G.pH=[];G.nH=[];
+  G.pRoleCard=null;G.nRoleCard=null;
+  // Role-guaranteed cards go directly into hand
+  if(G.pRole=='jester')G.pH.push(mkJokerCard(nid++));
+  if(G.pRole=='rich')G.pH.push(mkZeroCard(nid++));
+  if(G.nRole=='jester')G.nH.push(mkJokerCard(nid++));
+  if(G.nRole=='rich')G.nH.push(mkZeroCard(nid++));
+  // Deal remaining slots from deck to reach hand limit
+  while(G.pH.length<G.pHandLimit&&G.deck.length>0)G.pH.push(G.deck.pop());
+  while(G.nH.length<G.nHandLimit&&G.deck.length>0)G.nH.push(G.deck.pop());
+  G.pGamble=null;G.nGamble=null;G.tieCnt=0;G.roundResolved=false;
+  G.pLossTotal=0;G.nLossTotal=0;
+}
+
+function doRoundStart(){
+  G.pPlayed=null;G.nPlayed=null;G.pBet=0;G.nBet=0;
+  G.pGamble=null;G.nGamble=null;G.tieCnt=0;G.tieCards=[];G.roundResolved=false;
+  G.roundResult='';
+
+  if(G.pRole=='noble'){
+    if(G.pStreak>=2) msg('权贵: 连续获胜，跳过摸牌弃牌','');
+    else if(G.pStreak<=-2){msg('权贵: 连败，摸2弃2','');nobleEffect('p',2);}
+    else {msg('权贵: 摸1弃1','');nobleEffect('p',1);}
+    if(G.nobleDiscardLeft>0)return;
+  }
+  finishRoundSetup();
+}
+
+function finishRoundSetup(){
+  if(G.nRole=='noble'){
+    if(G.nStreak>=2){}
+    else if(G.nStreak<=-2) nobleEffect('n',2);
+    else nobleEffect('n',1);
+  }
+  if(G.nobleDiscardLeft>0)return;
+
+  if(G.pExtraDraw>0){
+    for(let i=0;i<G.pExtraDraw;i++)if(G.deck.length>0)G.pH.push(G.deck.pop());
+    msg(`巫师: 额外摸${G.pExtraDraw}张`,'');G.pExtraDraw=0;
+  }
+  if(G.nExtraDraw>0){
+    for(let i=0;i<G.nExtraDraw;i++)if(G.deck.length>0)G.nH.push(G.deck.pop());
+    G.nExtraDraw=0;
+  }
+
+  G.phase='play';
+  msg(`第${G.round}回合——选择手牌`,'imp');
+  render();
+}
+
+function nobleEffect(who,count){
+  const hand=who=='p'?G.pH:G.nH;
+  for(let i=0;i<count;i++)if(G.deck.length>0)hand.push(G.deck.pop());
+  if(who=='n'){
+    for(let i=0;i<count&&hand.length>0;i++){
+      hand.sort((a,b)=>(a.type=='gambler'?1:a.v)-(b.type=='gambler'?1:b.v));
+      G.disc.push(hand.shift());
+    }
+  }else{
+    G.nobleDiscardLeft=count;
+    G.phase='noble_disc';
+    render();
+  }
+}
+
+function nobleDiscardCard(idx){
+  if(G.phase!='noble_disc'||G.nobleDiscardLeft<=0)return;
+  G.disc.push(G.pH.splice(idx,1)[0]);
+  G.nobleDiscardLeft--;
+  if(G.nobleDiscardLeft<=0){
+    G.nobleDiscardLeft=0;
+    finishRoundSetup();
+    return;
+  }
+  render();
+}
+
+function playerPlayCard(idx){
+  if(G.phase!='play')return;
+  // Clicking played card in play slot to return it
+  if(idx===-2){returnCard();return;}
+  if(idx<0||idx>=G.pH.length)return;
+  const card=G.pH[idx];
+  if(G.pPlayed===card){returnCard();return;}
+  if(G.pPlayed) returnCard();
+  G.pPlayed=card;
+  G.pH.splice(idx,1);
+  render();
+}
+
+function returnCard(){
+  if(!G.pPlayed||G.phase!='play')return;
+  G.pH.push(G.pPlayed);
+  G.pPlayed=null;
+  render();
+}
+
+function confirmPlay(){
+  if(!G.pPlayed||G.phase!='play')return;
+  // AI plays
+  if(G.nH.length>0){
+    const aiIdx=aiPickCard(G.nH,G.nRole);
+    G.nPlayed=G.nH.splice(aiIdx,1)[0];
+  }
+  if(G.pPlayed.type=='gambler')G.pGamble=rollGambler();
+  if(G.nPlayed&&G.nPlayed.type=='gambler')G.nGamble=rollGambler();
+  G.phase='bet';G.pBet=0;G.nBet=0;
+  msg('双方已出牌——请下注','imp');
+  render();
+}
+
+function setBet(amt){
+  if(G.phase!='bet')return;
+  const minB=(G.pRole=='rich'&&G.pChips>=10)?10:1;
+  amt=Math.max(minB,Math.min(amt,G.pChips));
+  if(G.pRole=='rich'&&G.pChips<10)amt=G.pChips;
+  G.pBet=amt;render();
+}
+
+function confirmBet(){
+  if(G.phase!='bet'||G.pBet<=0)return;
+  G.nBet=aiBet(G.nChips,G.pChips,G.nPlayed,G.round,G.nRole);
+  G.phase='resolve';
+  doResolve();render();
+}
+
+function doResolve(){
+  const pC=G.pPlayed,nC=G.nPlayed;
+  if(!pC||!nC)return;
+
+  let forcedTie=false;
+  if(G.pMirror){forcedTie=true;G.pMirror=false;msg('镜像: 强制平局!','imp')}
+  if(G.nMirror){forcedTie=true;G.nMirror=false;msg('镜像: 强制平局!','imp')}
+
+  if(pC.type=='gambler')msg(`赌徒揭晓点数: ${G.pGamble}`,'');
+  if(nC.type=='gambler')msg(`NPC赌徒点数: ${G.nGamble}`,'');
+
+  const result=forcedTie?'tie':compare(pC,nC,G.pRole,G.nRole);
+
+  const pShowVal=pC.type=='gambler'?G.pGamble:getVal(pC,G.pRole);
+  const nShowVal=nC.type=='gambler'?G.nGamble:getVal(nC,G.nRole);
+  msg(`你:${pC.n}(${pShowVal}) vs NPC:${nC.n}(${nShowVal})`,'');
+
+  if(result=='tie'){
+    msg('平局! 下注不返回，双方补1牌，加时继续','imp');
+    if(pC.type=='ghost'){const b=Math.floor(G.pBet*1.5);G.pChips+=b;msg(`幽灵: +${b}分`,'win')}
+    if(nC.type=='ghost'){const b=Math.floor(G.nBet*1.5);G.nChips+=b;msg(`NPC幽灵: +${b}分`,'lose')}
+    // Move tied cards aside
+    G.tieCards.push({p:G.pPlayed,n:G.nPlayed});
+    G.pPlayed=null;G.nPlayed=null;
+    // Draw 1 each
+    if(G.deck.length>0)G.pH.push(G.deck.pop());
+    if(G.deck.length>0)G.nH.push(G.deck.pop());
+    G.pBet=0;G.nBet=0;G.tieCnt++;
+    G.pGamble=null;G.nGamble=null;
+    G.roundResult='tie';
+    G.phase='play';
+    G.roundResolved=false;
+    msg('加时赛——请选择手牌','imp');
+    return;
+  }
+
+  const pWin=result=='p';
+  G.roundResult=pWin?'win':'lose';
+  const wC=pWin?pC:nC, lC=pWin?nC:pC;
+  const wBet=pWin?G.nBet:G.pBet;
+  const lBet=pWin?G.pBet:G.nBet;
+
+  if(pWin){
+    G.pChips+=G.nBet;G.nChips-=G.nBet;
+    G.pStreak=Math.max(0,G.pStreak)+1;G.nStreak=Math.min(0,G.nStreak)-1;
+    if(G.pRole=='knight')G.pHandLimit=Math.min(6,G.pHandLimit+1);
+    if(G.nRole=='knight')G.nHandLimit=Math.max(2,G.nHandLimit-1);
+    G.pLossTotal=0;G.nLossTotal+=G.nBet;
+    msg(`你赢了! +${G.nBet}分`,'win');
+  }else{
+    G.nChips+=G.pBet;G.pChips-=G.pBet;
+    G.nStreak=Math.max(0,G.nStreak)+1;G.pStreak=Math.min(0,G.pStreak)-1;
+    if(G.nRole=='knight')G.nHandLimit=Math.min(6,G.nHandLimit+1);
+    if(G.pRole=='knight')G.pHandLimit=Math.max(2,G.pHandLimit-1);
+    G.nLossTotal=0;G.pLossTotal+=G.pBet;
+    msg(`你输了! -${G.pBet}分`,'lose');
+  }
+
+  // Guard from PREVIOUS round
+  if(G.pGuard){G.pChips+=2;G.pGuard=false;msg('盾卫(上回合): +2分','win')}
+  if(G.nGuard){G.nChips+=2;G.nGuard=false;msg('NPC盾卫(上回合): +2分','lose')}
+
+  // Winner effects
+  if(wC.type=='king'){
+    if(pWin)G.pChips+=2;else G.nChips+=2;
+    msg(`国王: +2分(系统)`,'win');
+  }
+  if(wC.type=='mirror'){
+    if(pWin)G.pMirror=true;else G.nMirror=true;
+    msg(`镜像: 下回合首轮强制平局`,'');
+  }
+  if(wC.type=='joker'){
+    if(pWin){G.pChips+=G.nBet;G.nChips-=G.nBet;msg('小丑: 加倍对方下注!','win')}
+    else{G.nChips+=G.pBet;G.pChips-=G.pBet;msg('NPC小丑: 加倍你下注!','lose')}
+  }
+  // Set guard for NEXT round if winner used guard
+  if(wC.type=='guard'){
+    if(pWin)G.pGuard=true;else G.nGuard=true;
+    msg(`盾卫: 下回合下注后+2分`,'');
+  }
+
+  // Loser effects
+  if(lC.type=='wizard'){
+    if(!pWin)G.pExtraDraw++;else G.nExtraDraw++;
+    msg(`巫师: 下回合开始摸1张`,'');
+  }
+  if(lC.type=='apothecary'){
+    const half=Math.floor(lBet/2);
+    if(!pWin){G.pChips+=half;G.nChips-=half;msg(`药剂师: 保留${half}分`,'')}
+    else{G.nChips+=half;G.pChips-=half;msg(`NPC药剂师: NPC保留${half}分`,'')}
+  }
+  if(lC.type=='joker'){
+    if(!pWin){G.nChips+=G.pBet;G.pChips-=G.pBet;msg('小丑(输): 加倍己方下注损失!','lose')}
+    else{G.pChips+=G.nBet;G.nChips-=G.nBet;msg('NPC小丑(输): 加倍NPC下注损失!','win')}
+  }
+
+  // Rich: per 10 lost = draw 1 (cumulative tracking)
+  if(!pWin&&G.pRole=='rich'){
+    const draws=Math.floor(G.pLossTotal/10);
+    for(let i=0;i<draws;i++)if(G.deck.length>0){G.pH.push(G.deck.pop());msg('富豪: 失10分摸1牌','')}
+    G.pLossTotal%=10;
+  }
+  if(pWin&&G.nRole=='rich'){
+    const draws=Math.floor(G.nLossTotal/10);
+    for(let i=0;i<draws;i++)if(G.deck.length>0)G.nH.push(G.deck.pop());
+    G.nLossTotal%=10;
+  }
+
+  if(G.pChips<=0){G.pChips=0;G.phase='over';msg('筹码归零!','lose');render();return}
+  if(G.nChips<=0){G.nChips=0;G.phase='over';msg('NPC筹码归零!','win');render();return}
+
+  // Keep all cards visible for review; discard happens on nextRound()
+  G.roundResolved=true;
+  G.phase='round_end';
+  render();
+}
+
+function nextRound(){
+  if(!G.roundResolved&&G.phase!=='over')return;
+  // Discard all tie cards + final played cards
+  for(const tp of G.tieCards){G.disc.push(tp.p);G.disc.push(tp.n);}
+  G.tieCards=[];
+  if(G.pPlayed){G.disc.push(G.pPlayed);G.pPlayed=null;}
+  if(G.nPlayed){G.disc.push(G.nPlayed);G.nPlayed=null;}
+  G.round++;
+  if(G.round>G.maxRounds){G.phase='over';render();return}
+  replForKnight();
+  doRoundStart();
+}
+
+function replForKnight(){
+  if(G.pRole=='knight'){
+    while(G.pH.length<G.pHandLimit&&G.deck.length>0)G.pH.push(G.deck.pop());
+  }
+  if(G.nRole=='knight'){
+    while(G.nH.length<G.nHandLimit&&G.deck.length>0)G.nH.push(G.deck.pop());
+  }
+}
+
+function restart(){initG();render()}
+
+// ── Render ──
+function render(){
+  const root=document.getElementById('root');
+  root.innerHTML='';
+  window._showDisc=false;
+
+  if(G.pRole&&G.nRole&&G.phase!=='role_sel'){
+    const bar=document.createElement('div');bar.className='info-bar';
+    bar.innerHTML=`
+      <div class="chip">👤 ${ROLES[G.pRole].n} <span class="points">${G.pChips}分</span></div>
+      <div class="chip">🤖 NPC <span class="points">${G.nChips}分</span></div>
+      <div class="chip">第 ${G.round}/${G.maxRounds} 回合</div>
+      ${G.pRole=='knight'?`<div class="chip">手牌上限:${G.pHandLimit}</div>`:''}
+    `;
+    root.appendChild(bar);
+    const effs=[];
+    if(G.pMirror)effs.push('下回合强制平局');
+    if(G.pGuard)effs.push('下回合+2分');
+    if(G.pExtraDraw)effs.push(`下回合多摸${G.pExtraDraw}`);
+    if(G.nobleDiscardLeft>0)effs.push(`需丢弃${G.nobleDiscardLeft}张`);
+    if(effs.length){
+      const eb=document.createElement('div');eb.className='effects-bar';
+      eb.innerHTML=effs.map(e=>`<span class="effect-tag">${e}</span>`).join('');
+      root.appendChild(eb);
+    }
+  }
+
+  const phLabs={role_sel:'',play:'出牌阶段',bet:'下注阶段',resolve:'结算中',round_end:'回合结束',noble_disc:'权贵-选择弃牌',over:'游戏结束'};
+  const ph=document.createElement('div');ph.className='phase-ind';ph.textContent=phLabs[G.phase]||'';root.appendChild(ph);
+
+  if(G.phase=='role_sel'){renderRoleSel(root);return;}
+
+  // ======= TOP: NPC area =======
+  // NPC hand (face down)
+  if(G.nH.length>0&&G.phase!=='over'){
+    const nha=document.createElement('div');nha.className='hand-area';
+    const nhl=document.createElement('div');nhl.className='hand-label';nhl.textContent='NPC手牌 ('+G.nH.length+'张)';nha.appendChild(nhl);
+    const nhd=document.createElement('div');nhd.className='hand';
+    for(let i=0;i<G.nH.length;i++)nhd.appendChild(renderBack());
+    nha.appendChild(nhd);
+    root.appendChild(nha);
+  }
+
+  // ======= MIDDLE: Table =======
+  const tbl=document.createElement('div');tbl.className='table';tbl.style.position='relative';
+
+  // Deck + discard
+  const da=document.createElement('div');da.className='deck-area';
+  const dk=document.createElement('div');dk.className='deck';
+  dk.innerHTML=`<div class="count">${G.deck.length}</div><div style="font-size:0.6em;color:#6a9aba">牌堆</div>`;
+  da.appendChild(dk);
+  const dp=document.createElement('div');dp.className='discard-pile';
+  dp.innerHTML=`<div class="count">${G.disc.length}</div><div style="font-size:0.6em;color:#886666">弃牌堆</div>`;
+  dp.setAttribute('onmouseenter','window._showDisc=true;window._reRender()');
+  dp.setAttribute('onmouseleave','window._showDisc=false;window._reRender()');
+  da.appendChild(dp);
+  tbl.appendChild(da);
+
+  // Discard tooltip
+  if(window._showDisc&&G.disc.length>0){
+    const tt=document.createElement('div');tt.className='discard-tooltip';
+    tt.innerHTML=G.disc.slice(-12).map(c=>{
+      const v=c.type=='gambler'?'?':getVal(c,G.pRole);
+      return`<div class="mc" title="${c.n}${c.e?' - '+c.e:''}"><span class="mcv">${v}</span><span class="mcn">${c.n}</span></div>`;
+    }).join('');
+    tbl.appendChild(tt);
+  }
+
+  // Tie zone — show all tied card pairs above play zone
+  const showTieZone = (G.tieCards.length>0 && (G.phase=='play'||G.phase=='bet'||G.phase=='round_end'||G.phase=='resolve'));
+  if(showTieZone){
+    const tz=document.createElement('div');
+    tz.style.cssText='display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;background:rgba(212,168,67,0.06);border:1px solid #5a4a2a;border-radius:10px;padding:6px 12px;margin-bottom:4px';
+    tz.innerHTML='<span style="color:#d4a843;font-size:0.75em;font-weight:bold;margin-right:6px">平局记录 ('+G.tieCards.length+'轮)</span>';
+    G.tieCards.forEach((tp,i)=>{
+      const mc1=renderCard(tp.n,false,G.nRole,true);mc1.style.width='44px';mc1.style.height='64px';
+      tz.appendChild(mc1);
+      if(i===G.tieCards.length-1){
+        const sp=document.createElement('span');sp.style.cssText='color:#d4a843;font-size:0.7em';sp.textContent='平';
+        tz.appendChild(sp);
+      }
+    });
+    G.tieCards.forEach((tp,i)=>{
+      const mc2=renderCard(tp.p,false,G.pRole,true);mc2.style.width='44px';mc2.style.height='64px';
+      if(i===G.tieCards.length-1) tz.appendChild(mc2);
+      else tz.appendChild(mc2);
+    });
+    tbl.appendChild(tz);
+  }
+
+  // Main play zone
+  const pz=document.createElement('div');pz.className='play-zone';
+
+  // NPC slot
+  const nSlot=document.createElement('div');nSlot.className='play-slot'+(G.nPlayed?' filled':'');
+  nSlot.style.position='relative';
+  const nRevealed=(G.phase=='resolve'||G.phase=='bet'||G.phase=='round_end');
+  if(G.nPlayed&&nRevealed){
+    nSlot.appendChild(renderCard(G.nPlayed,false,G.nRole,true));
+  }else if(G.nPlayed){
+    nSlot.appendChild(renderBack());
+  }else{nSlot.textContent='?'}
+  const nl=document.createElement('div');nl.style.cssText='position:absolute;bottom:-20px;font-size:0.65em;color:#8b7355;white-space:nowrap';nl.textContent='NPC的牌';nSlot.appendChild(nl);
+  pz.appendChild(nSlot);
+
+  const vs=document.createElement('div');vs.style.cssText='font-size:1.8em;font-weight:bold;color:#d4a843';vs.textContent='VS';pz.appendChild(vs);
+
+  // Player slot
+  const pSlot=document.createElement('div');pSlot.className='play-slot'+(G.pPlayed?' filled':'');
+  pSlot.style.position='relative';
+  if(G.pPlayed){
+    pSlot.appendChild(renderCard(G.pPlayed,false,G.pRole,true));
+    if(G.phase=='play'){
+      pSlot.querySelector('.card').style.cursor='pointer';
+      pSlot.querySelector('.card').title='点击收回';
+      pSlot.querySelector('.card').addEventListener('click',()=>{playerPlayCard(-2)});
+    }
+  }else{pSlot.textContent='?'}
+  const pl=document.createElement('div');pl.style.cssText='position:absolute;bottom:-20px;font-size:0.65em;color:#8b7355;white-space:nowrap';pl.textContent='你的牌';pSlot.appendChild(pl);
+  pz.appendChild(pSlot);
+
+  tbl.appendChild(pz);
+
+  // Big result text in center of table
+  const showResult=(G.roundResult=='win'||G.roundResult=='lose')&&(G.phase=='round_end'||G.phase=='resolve');
+  const showTie=(G.roundResult=='tie'||G.tieCnt>0)&&(G.phase=='resolve'||G.phase=='play');
+  if(showResult||showTie){
+    const rt=document.createElement('div');
+    rt.style.cssText='position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3em;font-weight:900;letter-spacing:6px;pointer-events:none;z-index:10;text-shadow:0 0 20px currentColor;';
+    if(showResult&&G.roundResult=='win'){rt.textContent='WIN!';rt.style.color='#40d040'}
+    else if(showResult&&G.roundResult=='lose'){rt.textContent='LOSE';rt.style.color='#e04040'}
+    else if(showTie){rt.textContent='TIE';rt.style.color='#d4a843'}
+    tbl.appendChild(rt);
+  }
+
+  // Bet info
+  if((G.phase=='bet'||G.phase=='resolve'||G.phase=='round_end')&&(G.pBet>0||G.nBet>0)){
+    const bd=document.createElement('div');bd.style.cssText='display:flex;gap:24px;font-size:0.85em';
+    bd.innerHTML=`<span>你下注: <b style="color:#ffd700">${G.pBet||'?'}</b></span><span>NPC下注: <b style="color:#ffd700">${G.nBet}</b></span>`;
+    tbl.appendChild(bd);
+  }
+
+  root.appendChild(tbl);
+
+  // ======= BOTTOM: Player area =======
+  // Player hand
+  if(G.pH.length>0&&(G.phase=='play'||G.phase=='noble_disc'||G.phase=='bet')){
+    const ha=document.createElement('div');ha.className='hand-area';
+    const hl=document.createElement('div');hl.className='hand-label';
+    hl.textContent=G.phase=='noble_disc'?`选择${G.nobleDiscardLeft}张牌丢弃(公开)`:'你的手牌 ('+G.pH.length+'张)';
+    ha.appendChild(hl);
+    const hd=document.createElement('div');hd.className='hand';
+    G.pH.forEach((c,i)=>{
+      const el=renderCard(c,true,G.pRole);
+      if(G.phase=='play')el.addEventListener('click',()=>playerPlayCard(i));
+      if(G.phase=='noble_disc')el.addEventListener('click',()=>nobleDiscardCard(i));
+      if(G.pPlayed===c)el.classList.add('selected');
+      hd.appendChild(el);
+    });
+    ha.appendChild(hd);
+    root.appendChild(ha);
+  }
+
+  // ======= Action buttons =======
+  const acts=document.createElement('div');acts.style.cssText='display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px';
+
+  if(G.phase=='play'){
+    if(G.pPlayed){
+      const b1=document.createElement('button');b1.className='btn confirm';b1.textContent='✓ 确定出牌';b1.addEventListener('click',confirmPlay);acts.appendChild(b1);
+      const b2=document.createElement('button');b2.className='btn';b2.textContent='↩ 收回';b2.addEventListener('click',returnCard);acts.appendChild(b2);
+    }
+  }
+
+  if(G.phase=='bet'){
+    const minB=(G.pRole=='rich'&&G.pChips>=10)?10:1;
+    const maxB=G.pChips;
+    if(maxB<=0){msg('积分不足!','lose');G.phase='over';render();return}
+    const ba=document.createElement('div');ba.className='bet-area';
+    const sl=document.createElement('input');sl.type='range';sl.className='bet-slider';
+    sl.min=minB;sl.max=maxB;sl.value=G.pBet||Math.min(minB,maxB);
+    const vl=document.createElement('span');vl.className='bet-value';vl.textContent=sl.value;
+    sl.addEventListener('input',()=>{G.pBet=parseInt(sl.value);vl.textContent=G.pBet});
+    ba.appendChild(sl);ba.appendChild(vl);
+    const pre=document.createElement('div');pre.className='bet-presets';
+    [0.25,0.5,0.75,1].forEach(f=>{
+      const b=document.createElement('button');b.className='bet-preset';
+      const a=Math.max(minB,Math.floor(G.pChips*f));
+      b.textContent=a;b.addEventListener('click',()=>{const v=Math.max(minB,Math.min(a,maxB));G.pBet=v;sl.value=v;vl.textContent=v});
+      pre.appendChild(b);
+    });
+    ba.appendChild(pre);
+    acts.appendChild(ba);
+    const cb=document.createElement('button');cb.className='btn confirm';cb.textContent='✓ 确定下注';cb.addEventListener('click',confirmBet);acts.appendChild(cb);
+  }
+
+  if(G.phase=='round_end'){
+    const nb=document.createElement('button');nb.className='btn';nb.textContent='下一回合 ▶';nb.addEventListener('click',nextRound);acts.appendChild(nb);
+  }
+
+  if(G.phase=='over'){
+    let wt;
+    if(G.pChips<=0)wt='NPC 获胜！';
+    else if(G.nChips<=0)wt='你赢了！';
+    else if(G.pChips>G.nChips)wt='你赢了！';
+    else if(G.nChips>G.pChips)wt='NPC 获胜！';
+    else wt='平局！';
+    const ov=document.createElement('div');ov.className='overlay';
+    ov.innerHTML=`
+      <div class="overlay-content"><h2>${wt}</h2>
+      <div class="fs">你的积分: <b style="color:#ffd700">${G.pChips}</b> | NPC积分: <b style="color:#ffd700">${G.nChips}</b></div>
+      <button class="btn" onclick="document.querySelector('.overlay').remove();restart()">再来一局</button></div>`;
+    root.appendChild(ov);
+  }
+
+  root.appendChild(acts);
+
+  if(G.msg.length>0){
+    const ml=document.createElement('div');ml.className='msg-log';
+    ml.innerHTML=G.msg.slice(-6).map(m=>`<div class="msg${m.c?' '+m.c:''}">${m.t}</div>`).join('');
+    root.appendChild(ml);
+  }
+}
+
+function renderRoleSel(root){
+  const pn=document.createElement('div');pn.className='panel';
+  if(!G.pRole){
+    pn.innerHTML='<h3>选择你的角色</h3>';
+    const g=document.createElement('div');g.className='role-grid';
+    Object.entries(ROLES).forEach(([k,r])=>{
+      const c=document.createElement('div');c.className='role-card slide-in';
+      c.innerHTML=`<div class="rn">${r.n}</div><div class="rc">初始 ${r.chips} 分</div><div class="rd">${r.d}</div>`;
+      c.addEventListener('click',()=>selPRole(k));g.appendChild(c);
+    });pn.appendChild(g);
+  }else if(!G.nRole){
+    pn.innerHTML='<h3>选择NPC的角色</h3>';
+    const g=document.createElement('div');g.className='role-grid';
+    Object.entries(ROLES).forEach(([k,r])=>{
+      const c=document.createElement('div');c.className='role-card slide-in';
+      if(k===G.pRole)c.style.opacity='0.5';
+      c.innerHTML=`<div class="rn">${r.n}</div><div class="rc">初始 ${r.chips} 分</div><div class="rd">${r.d}</div>`;
+      c.addEventListener('click',()=>selNRole(k));g.appendChild(c);
+    });pn.appendChild(g);
+  }
+  if(G.pRole&&G.nRole){
+    const cd=document.createElement('div');cd.style.cssText='text-align:center;margin-top:12px';
+    cd.innerHTML=`<p style="margin-bottom:8px">👤 ${ROLES[G.pRole].n} vs 🤖 ${ROLES[G.nRole].n}</p><button class="btn confirm">开始游戏</button>`;
+    cd.querySelector('button').addEventListener('click',startGame);pn.appendChild(cd);
+  }
+  root.appendChild(pn);
+}
+
+function renderCard(card,canFlip,role,showGambleVal){
+  const w=document.createElement('div');w.className=`card ${card.c}`;
+  const inn=document.createElement('div');inn.className='card-inner';
+  const bk=document.createElement('div');bk.className='card-face card-back';inn.appendChild(bk);
+  const fr=document.createElement('div');fr.className='card-face card-front';
+  let dispVal;
+  if(showGambleVal&&card.type=='gambler'){
+    dispVal=G.pPlayed===card?G.pGamble:G.nGamble;
+  }else{
+    dispVal=getVal(card,role);
+  }
+  fr.innerHTML=`<div class="cv">${dispVal}</div><div class="cn">${card.n}</div>${card.e?`<div class="ce">${card.e}</div>`:''}`;
+  inn.appendChild(fr);w.appendChild(inn);
+  if(canFlip){w.addEventListener('mouseenter',()=>w.classList.add('flipped'));w.addEventListener('mouseleave',()=>w.classList.remove('flipped'))}
+  return w;
+}
+
+function renderBack(){
+  const w=document.createElement('div');w.className='card';
+  const inn=document.createElement('div');inn.className='card-inner';
+  inn.appendChild(Object.assign(document.createElement('div'),{className:'card-face card-back'}));
+  w.appendChild(inn);return w;
+}
+
+// Global helpers for inline handlers
+window._showDisc=false;
+window._reRender=function(){render()};
+
+// ── Init ──
+initG();render();
+</script>
+</body>
+</html>
