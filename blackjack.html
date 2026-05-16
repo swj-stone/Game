@@ -2,714 +2,422 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>21点 - Blackjack</title>
 <style>
-  :root {
-    --felt: #0d5e2e;
-    --felt-dark: #094822;
-    --gold: #daa520;
-    --gold-light: #f0d060;
-    --red: #c41e3a;
-    --dark: #1a1a2e;
-    --wood: #5c3a1e;
-    --wood-dark: #3a2210;
-  }
+:root{--felt:#0d5e2e;--felt-dark:#074018;--gold:#daa520;--gold-light:#f0d060;--red:#c41e3a;--dark:#1a1a2e;--wood:#5c3a1e;--wood-dark:#3a2210}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at center,#1a1a2e 0%,#0a0a15 100%);
+  font-family:'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;overflow-x:hidden;user-select:none;
+}
+.casino-table{
+  position:relative;width:min(960px,98vw);
+  background:radial-gradient(ellipse at 50% 30%,#1a7a3a 0%,#0d5e2e 40%,#074018 100%);
+  border-radius:180px/60px;border:18px solid var(--wood-dark);
+  box-shadow:inset 0 8px 32px rgba(0,0,0,.5),0 0 0 4px var(--wood),0 0 0 10px #2a1500,0 12px 48px rgba(0,0,0,.7);
+  padding:20px 24px 28px;display:flex;gap:16px;min-height:620px;
+}
+.casino-table::before{content:'';position:absolute;inset:12px;border:2px solid rgba(218,165,32,.25);border-radius:168px/50px;pointer-events:none}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+/* 左侧：杂乱牌堆 */
+.left-panel{position:relative;z-index:2;width:130px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:8px;padding-top:6px}
+.left-panel .panel-title{color:rgba(255,255,255,.55);font-size:.6rem;letter-spacing:2px;text-transform:uppercase}
+.revealed-zone{flex:1;width:100%;background:rgba(0,0,0,.25);border-radius:10px;border:1px dashed rgba(255,255,255,.1);position:relative;overflow-y:auto;min-height:260px}
+/* 每张牌绝对定位叠成乱堆 */
+.revealed-zone .mini-card{width:46px;height:66px;background:#fff;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.65rem;box-shadow:1px 2px 5px rgba(0,0,0,.3);position:absolute;transition:all .35s ease;animation:popIn .3s ease;left:50%;top:50%}
+/* 悬停时展开成网格 */
+.revealed-zone:hover .mini-card{position:static!important;transform:none!important;left:auto!important;top:auto!important;margin:3px}
+.revealed-zone:hover{display:flex;flex-wrap:wrap;align-content:flex-start;justify-content:center;gap:2px;padding:8px 4px}
+.mini-card .mc-rank{font-weight:700;font-size:.78rem}.mini-card .mc-suit{font-size:1rem}
+.mini-card.red{color:var(--red)}.mini-card.black{color:var(--dark)}
 
-  body {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a15 100%);
-    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    overflow-x: hidden;
-    user-select: none;
-  }
+/* 主游戏区 */
+.main-area{flex:1;display:flex;flex-direction:column;gap:12px;z-index:2;position:relative}
 
-  /* ── 赌桌主体 ── */
-  .casino-table {
-    position: relative;
-    width: min(900px, 96vw);
-    background: radial-gradient(ellipse at 50% 30%, #1a7a3a 0%, #0d5e2e 40%, #074018 100%);
-    border-radius: 160px / 60px;
-    border: 18px solid var(--wood-dark);
-    box-shadow:
-      inset 0 8px 32px rgba(0,0,0,0.5),
-      0 0 0 4px var(--wood),
-      0 0 0 10px #2a1500,
-      0 12px 48px rgba(0,0,0,0.7);
-    padding: 30px 40px 36px;
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
+.section-label{color:rgba(255,255,255,.65);font-size:.72rem;letter-spacing:3px;margin-bottom:5px;text-align:center}
+.hand{display:flex;gap:10px;justify-content:center;align-items:flex-end;min-height:120px;flex-wrap:wrap}
 
-  /* ── 木纹装饰线 ── */
-  .casino-table::before {
-    content: '';
-    position: absolute;
-    inset: 12px;
-    border: 2px solid rgba(218,165,32,0.25);
-    border-radius: 148px / 48px;
-    pointer-events: none;
-  }
+/* 牌堆 */
+.deck-zone{display:flex;justify-content:center;align-items:center;gap:35px;padding:4px 0}
+.deck-pile{position:relative;width:82px;height:118px;flex-shrink:0}
+.deck-pile .dc{position:absolute;width:82px;height:118px;border-radius:8px;background:linear-gradient(135deg,#1a3a8a,#0d2460 50%,#1a3a8a);border:3px solid #4a6fc0;box-shadow:2px 3px 10px rgba(0,0,0,.4)}
+.deck-pile .dc:nth-child(1){top:0;left:0}.deck-pile .dc:nth-child(2){top:2px;left:2px}.deck-pile .dc:nth-child(3){top:4px;left:4px}
+.deck-pile .dc::after{content:'';position:absolute;inset:6px;border:2px solid rgba(255,255,255,.2);border-radius:3px;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,.06) 3px,rgba(255,255,255,.06) 6px)}
+.deck-label{color:rgba(255,255,255,.45);font-size:.6rem;letter-spacing:2px;text-align:center;margin-top:4px}
+.deck-count{color:var(--gold);font-size:.8rem;font-weight:700}
+.deck-count.low{color:#f66}
 
-  /* ── 区域 ── */
-  .section {
-    position: relative;
-    z-index: 1;
-  }
+/* 卡牌 */
+.card{
+  width:82px;height:118px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;transition:transform .3s ease,box-shadow .3s ease;cursor:default;
+  background:#fff;box-shadow:2px 3px 10px rgba(0,0,0,.35);
+}
+.card-rank{font-size:1.5rem;font-weight:700;line-height:1}.card-suit{font-size:2.2rem;line-height:1;margin-top:2px}
+.card .corner-rank{position:absolute;top:6px;left:8px;font-size:.75rem;font-weight:700;line-height:1}
+.card .corner-suit{position:absolute;top:18px;left:8px;font-size:.7rem;line-height:1}
+.card.red{color:var(--red)}.card.black{color:var(--dark)}
 
-  .section-label {
-    color: rgba(255,255,255,0.7);
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    margin-bottom: 8px;
-    text-align: center;
-  }
+/* 暗牌（牌背） */
+.card.hidden{
+  background:linear-gradient(135deg,#1a3a8a,#0d2460 50%,#1a3a8a);color:transparent;
+  border:3px solid #4a6fc0;box-shadow:2px 3px 12px rgba(0,0,0,.45);
+}
+.card.hidden::after{content:'';position:absolute;inset:6px;border:2px solid rgba(255,255,255,.2);border-radius:3px;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,.07) 3px,rgba(255,255,255,.07) 6px)}
+/* 牌面内容：覆盖继承的 color:transparent，确保文字可见 */
+.card.hidden .face{position:absolute;inset:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;background:#fff;border-radius:5px;overflow:hidden;pointer-events:none;transition:opacity .12s ease .18s;color:#1a1a2e}
+.card.hidden .face.red{color:#c41e3a}
+.card.hidden .face .card-rank{font-size:1.5rem;font-weight:700;line-height:1;color:inherit}
+.card.hidden .face .card-suit{font-size:2.2rem;line-height:1;margin-top:2px;color:inherit}
+.card.hidden .face .corner-rank{position:absolute;top:6px;left:8px;font-size:.75rem;font-weight:700;line-height:1;color:inherit}
+.card.hidden .face .corner-suit{position:absolute;top:18px;left:8px;font-size:.7rem;line-height:1;color:inherit}
 
-  /* ── 卡牌容器 ── */
-  .hand {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    align-items: flex-end;
-    min-height: 120px;
-    flex-wrap: wrap;
-  }
+/* 庄家暗牌：不可看（无hover效果） */
+.card.hidden.dealer-hidden{cursor:default;pointer-events:none}
+.card.hidden.dealer-hidden:hover{transform:none!important;box-shadow:2px 3px 12px rgba(0,0,0,.45)!important}
+.card.hidden.dealer-hidden:hover::after{opacity:1!important}
+.card.hidden.dealer-hidden:hover .face{opacity:0!important}
 
-  /* ── 单张牌 ── */
-  .card {
-    width: 82px;
-    height: 118px;
-    background: #fff;
-    border-radius: 8px;
-    box-shadow: 2px 3px 10px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(0,0,0,0.06);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    cursor: default;
-  }
-  .card:hover { transform: translateY(-4px); box-shadow: 2px 7px 18px rgba(0,0,0,0.4); }
-  .card.dealt { animation: dealIn 0.4s ease-out; }
+/* 玩家暗牌：悬停翻转看牌 */
+.card.hidden.player-hidden{cursor:pointer;transform-origin:center bottom;transition:transform .4s cubic-bezier(.25,.8,.25,1.2),box-shadow .4s ease}
+.card.hidden.player-hidden:hover{transform:translateY(-26px) rotateX(55deg);box-shadow:2px 18px 30px rgba(0,0,0,.55);z-index:20}
+.card.hidden.player-hidden:hover::after{opacity:0;transition:opacity .08s ease .2s}
+.card.hidden.player-hidden:hover .face{opacity:1}
 
-  .card-rank {
-    font-size: 1.5rem;
-    font-weight: 700;
-    line-height: 1;
-  }
-  .card-suit {
-    font-size: 2.2rem;
-    line-height: 1;
-    margin-top: 2px;
-  }
-  .card .corner-rank {
-    position: absolute;
-    top: 6px;
-    left: 8px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    line-height: 1;
-  }
-  .card .corner-suit {
-    position: absolute;
-    top: 18px;
-    left: 8px;
-    font-size: 0.7rem;
-    line-height: 1;
-  }
+/* 翻转揭示动画 */
+.card.revealing{animation:cardReveal .6s ease-in-out forwards}
+@keyframes cardReveal{0%{transform:rotateY(0)}45%{transform:rotateY(90deg) scaleX(.1)}55%{transform:rotateY(90deg) scaleX(.1)}100%{transform:rotateY(0) scaleX(1)}}
 
-  .card.red { color: var(--red); }
-  .card.black { color: var(--dark); }
+/* 爆牌抖动 */
+.card.busted{animation:bustShake .5s ease}
+@keyframes bustShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
 
-  /* ── 暗牌（牌背） ── */
-  .card.hidden {
-    background: linear-gradient(135deg, #1a3a8a 0%, #0d2460 50%, #1a3a8a 100%);
-    color: transparent;
-    border: 3px solid #4a6fc0;
-    box-shadow: 2px 3px 10px rgba(0,0,0,0.4);
-  }
-  .card.hidden::after {
-    content: '';
-    position: absolute;
-    inset: 6px;
-    border: 2px solid rgba(255,255,255,0.25);
-    border-radius: 3px;
-    background: repeating-linear-gradient(
-      45deg, transparent, transparent 3px,
-      rgba(255,255,255,0.08) 3px, rgba(255,255,255,0.08) 6px
-    );
-  }
-  .card.revealed {
-    animation: flipReveal 0.5s ease-in-out;
-  }
+/* 点数 */
+.score-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.5);color:var(--gold-light);border:2px solid var(--gold);border-radius:20px;padding:4px 14px;font-size:.8rem;font-weight:600;letter-spacing:1px;margin:5px auto 0;width:fit-content}
+.score-badge .val{font-size:1.2rem;font-weight:800}
 
-  /* ── 点数徽章 ── */
-  .score-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(0,0,0,0.5);
-    color: var(--gold-light);
-    border: 2px solid var(--gold);
-    border-radius: 20px;
-    padding: 5px 16px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    letter-spacing: 1px;
-    margin: 8px auto 0;
-    width: fit-content;
-  }
-  .score-badge .val {
-    font-size: 1.3rem;
-    font-weight: 800;
-  }
+/* 按钮 */
+.controls{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;z-index:2}
+.btn{padding:10px 24px;border:none;border-radius:28px;font-size:.9rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;text-transform:uppercase;font-family:inherit}
+.btn:active{transform:scale(.95)}.btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.btn-hit{background:var(--red);color:#fff;box-shadow:0 4px 0 #8b1528}
+.btn-hit:hover:not(:disabled){background:#e02d4a;transform:translateY(-1px)}
+.btn-stand{background:#2c5f2c;color:#fff;box-shadow:0 4px 0 #1a3a1a}
+.btn-stand:hover:not(:disabled){background:#367a36;transform:translateY(-1px)}
+.btn-new{background:var(--gold);color:#1a1a2e;box-shadow:0 4px 0 #8b6914}
+.btn-new:hover{background:var(--gold-light);transform:translateY(-1px)}
 
-  /* ── 控制按钮 ── */
-  .controls {
-    display: flex;
-    gap: 14px;
-    justify-content: center;
-    flex-wrap: wrap;
-    z-index: 1;
-  }
+/* 结果 */
+.result-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:10;pointer-events:none;opacity:0;transition:opacity .4s}
+.result-overlay.show{opacity:1}
+.result-banner{background:rgba(0,0,0,.85);color:#fff;padding:12px 32px;border-radius:40px;font-size:1.4rem;font-weight:800;letter-spacing:2px;text-align:center;border:3px solid var(--gold);box-shadow:0 8px 32px rgba(0,0,0,.6);animation:popIn .5s cubic-bezier(.175,.885,.32,1.275)}
+.result-banner.win{border-color:#4caf50;color:#4caf50}.result-banner.lose{border-color:#f44336;color:#f44336}.result-banner.push{border-color:#ff9800;color:#ff9800}
 
-  .btn {
-    padding: 10px 28px;
-    border: none;
-    border-radius: 28px;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-transform: uppercase;
-    font-family: inherit;
-  }
-  .btn:active { transform: scale(0.95); }
-  .btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
+/* 积分 */
+.score-tracker{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;z-index:2}
+.chip-stack{display:flex;align-items:center;gap:7px;background:rgba(0,0,0,.4);border-radius:22px;padding:5px 14px}
+.chip-icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.6rem}
+.chip-icon.wins{background:#4caf50;color:#fff}.chip-icon.losses{background:#f44336;color:#fff}.chip-icon.net{background:var(--gold);color:#1a1a2e}
+.chip-label{color:rgba(255,255,255,.65);font-size:.68rem}.chip-val{color:#fff;font-weight:700;font-size:.9rem}
 
-  .btn-hit {
-    background: var(--red);
-    color: #fff;
-    box-shadow: 0 4px 0 #8b1528;
-  }
-  .btn-hit:hover:not(:disabled) { background: #e02d4a; transform: translateY(-1px); box-shadow: 0 5px 0 #8b1528; }
+@keyframes popIn{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 
-  .btn-stand {
-    background: #2c5f2c;
-    color: #fff;
-    box-shadow: 0 4px 0 #1a3a1a;
-  }
-  .btn-stand:hover:not(:disabled) { background: #367a36; transform: translateY(-1px); box-shadow: 0 5px 0 #1a3a1a; }
+/* 决策特写 */
+.decision-flash{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  font-size:2.6rem;font-weight:900;letter-spacing:4px;
+  pointer-events:none;z-index:25;opacity:0;
+  text-shadow:0 0 20px currentColor;
+}
+.decision-flash.pop{animation:flashPop .7s ease-out forwards}
+.decision-flash.hit{color:#ff4444}
+.decision-flash.stand{color:#44dd44}
+@keyframes flashPop{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+  30%{opacity:1;transform:translate(-50%,-50%) scale(1.3)}
+  60%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1.6)}
+}
 
-  .btn-new {
-    background: var(--gold);
-    color: #1a1a2e;
-    box-shadow: 0 4px 0 #8b6914;
-  }
-  .btn-new:hover { background: var(--gold-light); transform: translateY(-1px); box-shadow: 0 5px 0 #8b6914; }
-
-  /* ── 结果弹层 ── */
-  .result-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  }
-  .result-overlay.show { opacity: 1; }
-
-  .result-banner {
-    background: rgba(0,0,0,0.85);
-    color: #fff;
-    padding: 16px 40px;
-    border-radius: 40px;
-    font-size: 1.6rem;
-    font-weight: 800;
-    letter-spacing: 2px;
-    text-align: center;
-    border: 3px solid var(--gold);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
-  .result-banner.win { border-color: #4caf50; color: #4caf50; }
-  .result-banner.lose { border-color: #f44336; color: #f44336; }
-  .result-banner.push { border-color: #ff9800; color: #ff9800; }
-
-  /* ── 积分栏 ── */
-  .score-tracker {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-    flex-wrap: wrap;
-    z-index: 1;
-  }
-  .chip-stack {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(0,0,0,0.4);
-    border-radius: 24px;
-    padding: 6px 18px;
-  }
-  .chip-icon {
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 0.7rem;
-  }
-  .chip-icon.wins { background: #4caf50; color: #fff; }
-  .chip-icon.losses { background: #f44336; color: #fff; }
-  .chip-icon.net { background: var(--gold); color: #1a1a2e; }
-  .chip-label { color: rgba(255,255,255,0.7); font-size: 0.75rem; }
-  .chip-val { color: #fff; font-weight: 700; font-size: 1rem; }
-
-  /* ── 动效 ── */
-  @keyframes dealIn {
-    from { opacity: 0; transform: translateY(-40px) rotate(-8deg); }
-    to   { opacity: 1; transform: translateY(0) rotate(0); }
-  }
-  @keyframes flipReveal {
-    0%   { transform: rotateY(0deg); }
-    50%  { transform: rotateY(90deg); }
-    100% { transform: rotateY(0deg); }
-  }
-  @keyframes popIn {
-    from { transform: scale(0.6); opacity: 0; }
-    to   { transform: scale(1); opacity: 1; }
-  }
-
-  /* ── 响应式 ── */
-  @media (max-width: 600px) {
-    .casino-table { border-radius: 60px / 30px; padding: 20px 14px 24px; border-width: 10px; }
-    .casino-table::before { border-radius: 50px / 22px; }
-    .card { width: 58px; height: 84px; border-radius: 5px; }
-    .card-rank { font-size: 1.1rem; }
-    .card-suit { font-size: 1.5rem; }
-    .card .corner-rank { font-size: 0.6rem; top: 4px; left: 5px; }
-    .card .corner-suit { font-size: 0.55rem; top: 13px; left: 5px; }
-    .hand { gap: 5px; min-height: 90px; }
-    .btn { padding: 8px 18px; font-size: 0.8rem; }
-    .result-banner { font-size: 1.1rem; padding: 10px 24px; }
-  }
+/* 响应式 */
+@media(max-width:700px){
+  .casino-table{border-radius:50px/25px;padding:12px 8px 16px;border-width:10px;flex-direction:column;gap:6px}
+  .casino-table::before{border-radius:42px/20px}
+  .left-panel{width:100%;flex-direction:row;align-items:flex-start}
+  .revealed-zone{min-height:50px;max-height:65px;flex:1}
+  .revealed-zone .mini-card{width:32px;height:46px}
+  .revealed-zone:hover .mini-card{width:32px;height:46px}
+  .card{width:58px;height:84px;border-radius:5px}
+  .card-rank{font-size:1rem}.card-suit{font-size:1.4rem}
+  .card .corner-rank{font-size:.6rem;top:3px;left:4px}
+  .card .corner-suit{font-size:.5rem;top:11px;left:4px}
+  .card.hidden .face .card-rank{font-size:1rem}
+  .card.hidden .face .card-suit{font-size:1.4rem}
+  .hand{gap:4px;min-height:88px}
+  .deck-pile .dc{width:58px;height:84px}.deck-pile{width:58px;height:84px}
+  .btn{padding:7px 14px;font-size:.75rem}
+  .result-banner{font-size:1.1rem;padding:8px 18px}
+}
 </style>
 </head>
 <body>
 
 <div class="casino-table" id="table">
+  <!-- 左侧已翻牌区 -->
+  <div class="left-panel"><div class="panel-title">已翻牌</div><div class="revealed-zone" id="revealed-zone"></div></div>
 
-  <!-- 庄家区域 -->
-  <div class="section">
-    <div class="section-label">🏦 庄家 Dealer</div>
-    <div class="hand" id="dealer-hand"></div>
-    <div class="score-badge" id="dealer-score">点数 <span class="val">?</span></div>
-  </div>
-
-  <!-- 玩家区域 -->
-  <div class="section">
-    <div class="section-label">👤 玩家 Player</div>
-    <div class="hand" id="player-hand"></div>
-    <div class="score-badge" id="player-score">点数 <span class="val">0</span></div>
-  </div>
-
-  <!-- 结果 -->
-  <div class="result-overlay" id="result-overlay">
-    <div class="result-banner" id="result-banner"></div>
-  </div>
-
-  <!-- 按钮 -->
-  <div class="controls">
-    <button class="btn btn-hit" id="btn-hit" disabled>🃏 要牌 Hit</button>
-    <button class="btn btn-stand" id="btn-stand" disabled>✋ 停牌 Stand</button>
-    <button class="btn btn-new" id="btn-new">🔄 新一局</button>
-  </div>
-
-  <!-- 积分 -->
-  <div class="score-tracker">
-    <div class="chip-stack">
-      <div class="chip-icon wins">W</div>
-      <span class="chip-label">胜</span>
-      <span class="chip-val" id="wins-count">0</span>
+  <div class="main-area">
+    <!-- 庄家 -->
+    <div style="position:relative">
+      <div class="section-label">🏦 庄家 Dealer</div>
+      <div class="hand" id="dealer-hand"></div>
+      <div class="score-badge" id="dealer-score">点数 <span class="val">?</span></div>
+      <div class="decision-flash" id="dealer-flash"></div>
     </div>
-    <div class="chip-stack">
-      <div class="chip-icon losses">L</div>
-      <span class="chip-label">负</span>
-      <span class="chip-val" id="losses-count">0</span>
+
+    <!-- 牌堆 -->
+    <div class="deck-zone">
+      <div class="deck-pile" id="deck-pile"><div class="dc"></div><div class="dc"></div><div class="dc"></div></div>
+      <div style="text-align:center"><div class="deck-label">剩余</div><div class="deck-count" id="deck-count">52</div></div>
     </div>
-    <div class="chip-stack">
-      <div class="chip-icon net">净</div>
-      <span class="chip-label">净胜</span>
-      <span class="chip-val" id="net-count">0</span>
+
+    <!-- 玩家 -->
+    <div style="position:relative">
+      <div class="section-label">👤 玩家 Player</div>
+      <div class="hand" id="player-hand"></div>
+      <div class="score-badge" id="player-score">点数 <span class="val">0</span></div>
+      <div class="decision-flash" id="player-flash"></div>
+    </div>
+
+    <!-- 结果 -->
+    <div class="result-overlay" id="result-overlay"><div class="result-banner" id="result-banner"></div></div>
+
+    <!-- 按钮 -->
+    <div class="controls">
+      <button class="btn btn-hit" id="btn-hit" disabled>🃏 要牌 Hit</button>
+      <button class="btn btn-stand" id="btn-stand" disabled>✋ 停牌 Stand</button>
+      <button class="btn btn-new" id="btn-new">🔄 新一局</button>
+    </div>
+
+    <!-- 积分 -->
+    <div class="score-tracker">
+      <div class="chip-stack"><div class="chip-icon wins">W</div><span class="chip-label">胜</span><span class="chip-val" id="wins-count">0</span></div>
+      <div class="chip-stack"><div class="chip-icon losses">L</div><span class="chip-label">负</span><span class="chip-val" id="losses-count">0</span></div>
+      <div class="chip-stack"><div class="chip-icon net">净</div><span class="chip-label">净胜</span><span class="chip-val" id="net-count">0</span></div>
     </div>
   </div>
-
 </div>
 
 <script>
 // ═══════════════════════════════════════════
-//  21点（Blackjack）游戏逻辑
+//  21点 — 交替回合制（玩家⇄庄家轮流动）
+//  所有牌倒扣，玩家悬停看自己的牌
 // ═══════════════════════════════════════════
 
-const SUITS = [
-  { symbol: '♠', name: '黑桃', color: 'black' },
-  { symbol: '♥', name: '红桃', color: 'red' },
-  { symbol: '♦', name: '方块', color: 'red' },
-  { symbol: '♣', name: '梅花', color: 'black' },
-];
+const SUITS=[{s:'♠',c:'black'},{s:'♥',c:'red'},{s:'♦',c:'red'},{s:'♣',c:'black'}];
+const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
 
-const RANKS = [
-  { rank: 'A', value: [1, 11] },
-  { rank: '2', value: 2 },
-  { rank: '3', value: 3 },
-  { rank: '4', value: 4 },
-  { rank: '5', value: 5 },
-  { rank: '6', value: 6 },
-  { rank: '7', value: 7 },
-  { rank: '8', value: 8 },
-  { rank: '9', value: 9 },
-  { rank: '10', value: 10 },
-  { rank: 'J', value: 10 },
-  { rank: 'Q', value: 10 },
-  { rank: 'K', value: 10 },
-];
+function createDeck(){const d=[];for(const su of SUITS)for(const rk of RANKS){let v;if(rk==='A')v=[1,11];else if(['J','Q','K'].includes(rk))v=10;else v=parseInt(rk);d.push({suit:su.s,color:su.c,rank:rk,value:v})}return d}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}}
 
-function createDeck() {
-  const deck = [];
-  for (const suit of SUITS) {
-    for (const r of RANKS) {
-      deck.push({
-        suit: suit.symbol,
-        suitName: suit.name,
-        color: suit.color,
-        rank: r.rank,
-        value: Array.isArray(r.value) ? [...r.value] : r.value,
-      });
-    }
+function calc(h){let t=0,ac=0;for(const c of h){if(c.rank==='A'){ac++;t+=11}else if(Array.isArray(c.value))t+=c.value[1];else t+=c.value}while(t>21&&ac>0){t-=10;ac--}return t}
+function isSoft(h){let t=0,ac=0;for(const c of h){if(c.rank==='A'){ac++;t+=11}else if(Array.isArray(c.value))t+=c.value[1];else t+=c.value}return t<=21&&ac>0}
+function isNatural(h){return h.length===2&&calc(h)===21}
+
+// DOM
+const DH=document.getElementById('dealer-hand'),PH=document.getElementById('player-hand');
+const DS=document.getElementById('dealer-score'),PS=document.getElementById('player-score');
+const RO=document.getElementById('result-overlay'),RB=document.getElementById('result-banner');
+const BH=document.getElementById('btn-hit'),BS=document.getElementById('btn-stand'),BN=document.getElementById('btn-new');
+const WC=document.getElementById('wins-count'),LC=document.getElementById('losses-count'),NC=document.getElementById('net-count');
+const RZ=document.getElementById('revealed-zone'),DC=document.getElementById('deck-count');
+const DP=document.getElementById('deck-pile');
+
+let deck=[],pH=[],dH=[],gameOver=true,wins=0,losses=0,playerStood=false,dealerStood=false,net=()=>wins-losses;
+
+function getDeckCenter(){const r=DP.getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2}}
+
+// ── 创建卡牌元素 ──
+function makeCard(card,hidden=false,isDealer=false){
+  const d=document.createElement('div');
+  if(hidden){
+    d.className='card hidden'+(isDealer?' dealer-hidden':' player-hidden');
+    d.title=isDealer?'':'悬停看牌';
+    // 嵌入牌面内容（用于看牌动画）
+    const face=document.createElement('div');face.className='face '+card.color;
+    face.innerHTML=`<span class="corner-rank">${card.rank}</span><span class="corner-suit">${card.suit}</span><span class="card-rank">${card.rank}</span><span class="card-suit">${card.suit}</span>`;
+    d.appendChild(face);
+    return d;
   }
-  return deck;
+  d.className='card '+card.color;
+  d.innerHTML=`<span class="corner-rank">${card.rank}</span><span class="corner-suit">${card.suit}</span><span class="card-rank">${card.rank}</span><span class="card-suit">${card.suit}</span>`;
+  return d;
 }
 
-function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-}
-
-// 计算手牌最佳点数（A 灵活按 1 或 11）
-function calcHand(hand) {
-  let total = 0;
-  let aces = 0;
-
-  for (const card of hand) {
-    if (card.rank === 'A') {
-      aces++;
-      total += 11;
-    } else if (Array.isArray(card.value)) {
-      total += card.value[1]; // 不会走到这里，但兜底
-    } else {
-      total += card.value;
-    }
-  }
-
-  // 如果爆了且还有 A，把 A 从 11 降为 1
-  while (total > 21 && aces > 0) {
-    total -= 10;
-    aces--;
-  }
-
-  return total;
-}
-
-// 是否软牌（含有当 11 算的 A）
-function isSoft(hand) {
-  let total = 0;
-  let aces = 0;
-  for (const card of hand) {
-    if (card.rank === 'A') {
-      aces++;
-      total += 11;
-    } else if (Array.isArray(card.value)) {
-      total += card.value[1];
-    } else {
-      total += card.value;
-    }
-  }
-  return total <= 21 && aces > 0;
-}
-
-// ═══════════════════════════════════════════
-//  DOM 引用
-// ═══════════════════════════════════════════
-
-const dealerHandEl = document.getElementById('dealer-hand');
-const playerHandEl = document.getElementById('player-hand');
-const dealerScoreEl = document.getElementById('dealer-score');
-const playerScoreEl = document.getElementById('player-score');
-const resultOverlay = document.getElementById('result-overlay');
-const resultBanner = document.getElementById('result-banner');
-const btnHit = document.getElementById('btn-hit');
-const btnStand = document.getElementById('btn-stand');
-const btnNew = document.getElementById('btn-new');
-const winsCountEl = document.getElementById('wins-count');
-const lossesCountEl = document.getElementById('losses-count');
-const netCountEl = document.getElementById('net-count');
-
-// ═══════════════════════════════════════════
-//  游戏状态
-// ═══════════════════════════════════════════
-
-let deck = [];
-let playerHand = [];
-let dealerHand = [];
-let gameOver = true;
-let wins = 0;
-let losses = 0;
-
-function netScore() { return wins - losses; }
-
-// ═══════════════════════════════════════════
-//  渲染
-// ═══════════════════════════════════════════
-
-function renderCard(card, hidden = false) {
-  const div = document.createElement('div');
-  div.className = `card ${card.color}`;
-
-  if (hidden) {
-    div.className = 'card hidden';
-    return div;
-  }
-
-  div.innerHTML = `
-    <span class="corner-rank">${card.rank}</span>
-    <span class="corner-suit">${card.suit}</span>
-    <span class="card-rank">${card.rank}</span>
-    <span class="card-suit">${card.suit}</span>
-  `;
-  return div;
-}
-
-function renderHand(container, hand, hideFirst = false) {
-  container.innerHTML = '';
-  hand.forEach((card, i) => {
-    const cardEl = renderCard(card, hideFirst && i === 0);
-    if (i === hand.length - 1 && !(hideFirst && i === 0)) {
-      cardEl.classList.add('dealt');
-    }
-    container.appendChild(cardEl);
+// ── 发牌动画：牌从牌堆飞到目标位置（飞行时牌背朝上）──
+function dealCardTo(container,card,hidden=false,isDealer=false,delay=0){
+  return new Promise(resolve=>{
+    // 先放入最终卡牌（不可见）
+    const finalCard=makeCard(card,hidden,isDealer);finalCard.style.opacity='0';container.appendChild(finalCard);
+    const tr=finalCard.getBoundingClientRect();
+    const deckPos=getDeckCenter();
+    // 飞行克隆始终以牌背显示
+    const fly=makeCard(card,true,isDealer);fly.style.cssText=`position:fixed;left:${deckPos.x-41}px;top:${deckPos.y-59}px;z-index:30;transition:none;transform:scale(.6) rotate(-12deg);opacity:0;pointer-events:none`;document.body.appendChild(fly);
+    fly.offsetHeight;
+    setTimeout(()=>{fly.style.transition='all .42s cubic-bezier(.25,.8,.25,1.2)';fly.style.opacity='1';fly.style.transform='scale(1) rotate(0)';fly.style.left=tr.left+'px';fly.style.top=tr.top+'px';
+      setTimeout(()=>{document.body.removeChild(fly);finalCard.style.opacity='1';finalCard.style.animation='popIn .18s ease';resolve()},440)},delay);
   });
 }
 
-function updateScores(playerTurnActive) {
-  const playerVal = calcHand(playerHand);
-  const dealerVal = calcHand(dealerHand);
-
-  if (playerTurnActive || gameOver) {
-    // 玩家回合中或游戏结束：庄家只显示明牌点数
-    const visible = dealerHand.slice(1);
-    const visibleVal = calcHand(visible);
-    if (gameOver) {
-      dealerScoreEl.innerHTML = `点数 <span class="val">${dealerVal}</span>`;
-    } else {
-      dealerScoreEl.innerHTML = `点数 <span class="val">${visibleVal}+?</span>`;
-    }
-  } else {
-    dealerScoreEl.innerHTML = `点数 <span class="val">${dealerVal}</span>`;
+// ── 翻开一张暗牌（用于初始发牌后展示）──
+async function flipOneCard(container,card,index){
+  const cards=container.querySelectorAll('.card');
+  if(index<cards.length&&cards[index].classList.contains('hidden')){
+    await revealCardEl(cards[index],card);
   }
-
-  const soft = isSoft(playerHand);
-  playerScoreEl.innerHTML = `点数 <span class="val">${playerVal}</span>${soft && playerVal <= 21 ? ' (软)' : ''}`;
 }
 
-function updateStats() {
-  winsCountEl.textContent = wins;
-  lossesCountEl.textContent = losses;
-  netCountEl.textContent = netScore();
-}
+// ── 翻牌揭示 ──
+function revealCardEl(el,card){return new Promise(resolve=>{el.classList.add('revealing');el.classList.remove('hidden','player-hidden','dealer-hidden');setTimeout(()=>{el.innerHTML=`<span class="corner-rank">${card.rank}</span><span class="corner-suit">${card.suit}</span><span class="card-rank">${card.rank}</span><span class="card-suit">${card.suit}</span>`;el.classList.add(card.color)},280);setTimeout(()=>{el.classList.remove('revealing');resolve()},620)})}
+
+function addRevealed(card){const d=document.createElement('div');d.className='mini-card '+card.color;d.innerHTML=`<span class="mc-rank">${card.rank}</span><span class="mc-suit">${card.suit}</span>`;const rx=(Math.random()-.5)*60;const ry=(Math.random()-.5)*60;const rot=(Math.random()-.5)*50;d.style.transform=`translate(calc(-50% + ${rx}px), calc(-50% + ${ry}px)) rotate(${rot}deg)`;RZ.appendChild(d);RZ.scrollTop=RZ.scrollHeight}
+
+function updateDeckCount(){DC.textContent=deck.length;DC.className='deck-count'+(deck.length<8?' low':'')}
+function updateStats(){WC.textContent=wins;LC.textContent=losses;NC.textContent=net()}
 updateStats();
 
-// ═══════════════════════════════════════════
-//  游戏流程
-// ═══════════════════════════════════════════
-
-function startGame() {
-  // 洗牌（如果牌不够则重新生成）
-  if (deck.length < 12) {
-    deck = createDeck();
-    shuffle(deck);
-  }
-
-  playerHand = [];
-  dealerHand = [];
-  gameOver = false;
-
-  resultOverlay.classList.remove('show');
-
-  // 发牌：玩家-庄家-玩家-庄家
-  playerHand.push(deck.pop());
-  dealerHand.push(deck.pop());
-  playerHand.push(deck.pop());
-  dealerHand.push(deck.pop());
-
-  renderHand(playerHandEl, playerHand);
-  renderHand(dealerHandEl, dealerHand, true); // 庄家第一张暗牌
-  updateScores(true);
-
-  btnHit.disabled = false;
-  btnStand.disabled = false;
-  btnNew.textContent = '🔄 新一局';
-
-  // 检查自然黑杰克
-  const pv = calcHand(playerHand);
-  const dv = calcHand(dealerHand);
-
-  if (pv === 21) {
-    endRound();
-  }
-}
-
-function hit() {
-  if (gameOver) return;
-
-  playerHand.push(deck.pop());
-  renderHand(playerHandEl, playerHand);
-  updateScores(true);
-
-  if (calcHand(playerHand) > 21) {
-    endRound();
-  }
-}
-
-function stand() {
-  if (gameOver) return;
-  dealerTurn();
-}
-
-async function dealerTurn() {
-  btnHit.disabled = true;
-  btnStand.disabled = true;
-
-  // 揭示暗牌
-  revealDealerCard();
-
-  // 庄家抽牌直到 ≥ 17
-  while (calcHand(dealerHand) < 17) {
-    await sleep(600);
-    dealerHand.push(deck.pop());
-    renderHand(dealerHandEl, dealerHand);
-    updateScores(false);
-  }
-
-  endRound();
-}
-
-function revealDealerCard() {
-  const cards = dealerHandEl.querySelectorAll('.card');
-  if (cards.length > 0 && cards[0].classList.contains('hidden')) {
-    cards[0].classList.remove('hidden');
-    cards[0].classList.add('revealed');
-    // 替换内容
-    const c = dealerHand[0];
-    cards[0].innerHTML = `
-      <span class="corner-rank">${c.rank}</span>
-      <span class="corner-suit">${c.suit}</span>
-      <span class="card-rank">${c.rank}</span>
-      <span class="card-suit">${c.suit}</span>
-    `;
-    cards[0].classList.add(c.color);
-  }
-  updateScores(false);
-}
-
-function endRound() {
-  gameOver = true;
-  btnHit.disabled = true;
-  btnStand.disabled = true;
-  btnNew.textContent = '🔄 再来一局';
-
-  // 揭示庄家暗牌
-  revealDealerCard();
-
-  const pv = calcHand(playerHand);
-  const dv = calcHand(dealerHand);
-
-  let result, cssClass;
-
-  if (pv > 21) {
-    result = '💥 爆牌！庄家胜';
-    cssClass = 'lose';
-    losses++;
-  } else if (dv > 21) {
-    result = '🎉 庄家爆牌！玩家胜';
-    cssClass = 'win';
-    wins++;
-  } else if (pv > dv) {
-    result = '🎉 玩家胜！';
-    cssClass = 'win';
-    wins++;
-  } else if (dv > pv) {
-    result = '😞 庄家胜';
-    cssClass = 'lose';
-    losses++;
-  } else {
-    result = '🤝 平局';
-    cssClass = 'push';
-  }
-
-  resultBanner.textContent = result;
-  resultBanner.className = `result-banner ${cssClass}`;
-  resultOverlay.classList.add('show');
-  updateScores(false);
-  updateStats();
-}
-
-function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
+// ── 显示点数（游戏未结束时庄家显示?）──
+function updateScores(){
+  const pv=calc(pH),dv=calc(dH);
+  if(gameOver){DS.innerHTML=`点数 <span class="val">${dv}</span>`}
+  else{DS.innerHTML='点数 <span class="val">?</span>'}
+  const soft=isSoft(pH);
+  PS.innerHTML=`点数 <span class="val">${pv}</span>${soft&&pv<=21?' (软)':''}`;
 }
 
 // ═══════════════════════════════════════════
-//  事件绑定
+//  游戏流程（交替回合制）
 // ═══════════════════════════════════════════
 
-btnHit.addEventListener('click', hit);
-btnStand.addEventListener('click', stand);
-btnNew.addEventListener('click', startGame);
+async function startGame(){
+  if(deck.length<12){deck=createDeck();shuffle(deck);RZ.innerHTML=''}
+  pH=[];dH=[];gameOver=false;playerStood=false;dealerStood=false;
+  RO.classList.remove('show');BH.disabled=false;BS.disabled=false;BN.textContent='🔄 新一局';
+  DH.innerHTML='';PH.innerHTML='';updateDeckCount();updateScores();
 
-// 键盘支持
-document.addEventListener('keydown', (e) => {
-  if (gameOver) {
-    if (e.key === 'Enter' || e.key === ' ' || e.key === 'n') startGame();
+  // 发牌：全部背面朝上！庄家→玩家→庄家→玩家
+  dH.push(deck.pop());updateDeckCount();await dealCardTo(DH,dH[0],true,true,0);
+  pH.push(deck.pop());updateDeckCount();await dealCardTo(PH,pH[0],true,false,160);
+  dH.push(deck.pop());updateDeckCount();await dealCardTo(DH,dH[1],true,true,160);
+  pH.push(deck.pop());updateDeckCount();await dealCardTo(PH,pH[1],true,false,160);
+
+  // 发牌完毕：庄家翻开第二张，玩家翻开第一张
+  await sleep(300);
+  await flipOneCard(DH,dH[1],1);  // 庄家明牌
+  updateScores();
+  await sleep(200);
+  await flipOneCard(PH,pH[0],0);  // 玩家明牌
+  updateScores();
+
+}
+
+// ── 玩家要牌 ──
+async function hit(){
+  if(gameOver||playerStood)return;BH.disabled=true;BS.disabled=true;
+  flashDecision(DF_player,'hit');
+  pH.push(deck.pop());updateDeckCount();await dealCardTo(PH,pH[pH.length-1],true,false,80);
+  updateScores();
+  if(calc(pH)>21){const cards=PH.querySelectorAll('.card');cards[cards.length-1].classList.add('busted');await endRound('player_bust');return}
+  await dealerAction();
+  if(!gameOver&&!playerStood){BH.disabled=false;BS.disabled=false}
+}
+
+// ── 玩家停牌 ──
+async function stand(){
+  if(gameOver||playerStood)return;playerStood=true;BH.disabled=true;BS.disabled=true;
+  flashDecision(DF_player,'stand');
+  await dealerAction();
+  // 庄家继续直到停牌或爆牌
+  if(!gameOver&&!dealerStood)await dealerFinish();
+}
+
+// ── 庄家单次行动 ──
+async function dealerAction(){
+  if(gameOver)return;
+  if(calc(pH)>21)return;
+  // 若庄家已停牌，直接检查结束条件
+  if(dealerStood){
+    if(playerStood)await endRound('both_stand');
     return;
   }
-  if (e.key === 'h' || e.key === 'H') hit();
-  if (e.key === 's' || e.key === 'S') stand();
-});
+  await sleep(500);
+  const dv=calc(dH);
+  if(dv<17){
+    flashDecision(DF_dealer,'hit');
+    dH.push(deck.pop());updateDeckCount();await dealCardTo(DH,dH[dH.length-1],true,true,100);
+    updateScores();
+    if(calc(dH)>21){await endRound('dealer_bust');return}
+  }else{dealerStood=true;flashDecision(DF_dealer,'stand')}
+  if(playerStood&&dealerStood){await endRound('both_stand');return}
+}
 
-// ═══════════════════════════════════════════
-//  初始启动——自动发第一局
-// ═══════════════════════════════════════════
+// ── 庄家连续行动直到结束 ──
+async function dealerFinish(){
+  while(!gameOver&&!dealerStood&&calc(dH)<17&&calc(pH)<=21){
+    await sleep(500);
+    flashDecision(DF_dealer,'hit');
+    dH.push(deck.pop());updateDeckCount();await dealCardTo(DH,dH[dH.length-1],true,true,100);
+    updateScores();
+    if(calc(dH)>21){await endRound('dealer_bust');return}
+  }
+  if(!gameOver&&!dealerStood&&calc(dH)>=17){dealerStood=true;flashDecision(DF_dealer,'stand');}
+  if(!gameOver&&playerStood&&dealerStood)await endRound('both_stand');
+}
 
-deck = createDeck();
-shuffle(deck);
-startGame();
+// ── 结束一局 ──
+async function endRound(reason){
+  gameOver=true;BH.disabled=true;BS.disabled=true;BN.textContent='🔄 再来一局';
+
+  // 揭示所有牌
+  const dCards=DH.querySelectorAll('.card');for(let i=0;i<dCards.length;i++){if(dCards[i].classList.contains('hidden'))await revealCardEl(dCards[i],dH[i])}
+  const pCards=PH.querySelectorAll('.card');for(let i=0;i<pCards.length;i++){if(pCards[i].classList.contains('hidden'))await revealCardEl(pCards[i],pH[i])}
+  updateScores();
+  await sleep(300);
+  // 移到左侧翻牌区
+  dH.forEach(c=>addRevealed(c));pH.forEach(c=>addRevealed(c));
+  DH.innerHTML='';PH.innerHTML='';
+
+  const pv=calc(pH),dv=calc(dH);
+  let result,cssClass;
+  if(reason==='player_bust'){result='💥 玩家爆牌！庄家胜';cssClass='lose';losses++}
+  else if(reason==='dealer_bust'){result='🎉 庄家爆牌！玩家胜';cssClass='win';wins++}
+  else if(pv>dv){result='🎉 玩家胜！';cssClass='win';wins++}
+  else if(dv>pv){result='😞 庄家胜';cssClass='lose';losses++}
+  else{result='🤝 平局';cssClass='push'}
+
+  RB.textContent=result;RB.className='result-banner '+cssClass;RO.classList.add('show');updateStats();
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+
+// ── 决策特写 ──
+const DF_dealer=document.getElementById('dealer-flash'),DF_player=document.getElementById('player-flash');
+function flashDecision(el,type){
+  el.className='decision-flash '+type;
+  el.textContent=type==='hit'?'HIT!':'STAND!';
+  void el.offsetWidth; // reflow
+  el.classList.add('pop');
+  setTimeout(()=>{el.className='decision-flash';el.textContent=''},700);
+}
+
+// ── 事件 ──
+BH.addEventListener('click',hit);BS.addEventListener('click',stand);BN.addEventListener('click',startGame);
+document.addEventListener('keydown',e=>{if(gameOver){if(e.key==='Enter'||e.key===' '||e.key==='n')startGame();return}if(e.key==='h'||e.key==='H')hit();if(e.key==='s'||e.key==='S')stand()});
+
+// ── 启动 ──
+deck=createDeck();shuffle(deck);updateDeckCount();startGame();
 </script>
-
 </body>
 </html>
