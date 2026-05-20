@@ -4,4 +4,8 @@
 
 ---
 
+或者打开链接下载文件os.BIN：https://huggingface.co/datasets/fdgagdw/treasureisland/tree/main
+
+---
+
 其余文档为一些简易小游戏
