@@ -8,5 +8,7 @@
 
 ## blackjack.html————经典21点gamble游戏
 
-## blackjack.html————突发奇想设计的卡牌小游戏（目前有Bug且不完善）
+## chinese-chess————经典中国象棋
+
+## chips-and-bluff.html————突发奇想设计的卡牌小游戏（目前有Bug且不完善）
 
