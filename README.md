@@ -12,3 +12,5 @@
 
 ## chips-and-bluff.html————突发奇想设计的卡牌小游戏（目前有Bug且不完善）
 
+## texas-holdem.html————德州扑克低配版
+
