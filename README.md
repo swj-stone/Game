@@ -14,5 +14,7 @@
 
 ## flappy-bird.html————经典2D跑酷小游戏（游戏机制参数待改进）
 
+## gold-miner.html————黄金矿工低配版
+
 ## texas-holdem.html————德州扑克低配版
 
